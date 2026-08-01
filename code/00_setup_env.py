@@ -51,3 +51,19 @@
 # MAGIC )
 # MAGIC USING DELTA
 # MAGIC COMMENT 'Staging table for incoming data, cleaned by sp_clean_staging';
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- 6. Create product planning table (used by sp_run_simulation)
+# MAGIC CREATE TABLE IF NOT EXISTS dev_catalog.analytics.product_planning (
+# MAGIC   product_id STRING NOT NULL,
+# MAGIC   region STRING NOT NULL,
+# MAGIC   demand INT NOT NULL DEFAULT 0,
+# MAGIC   supply INT NOT NULL DEFAULT 0,
+# MAGIC   price DECIMAL(18, 2) NOT NULL DEFAULT 0.00,
+# MAGIC   simulation_flag BOOLEAN NOT NULL DEFAULT FALSE,
+# MAGIC   last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
+# MAGIC )
+# MAGIC USING DELTA
+# MAGIC COMMENT 'Product planning table for demand/supply simulation, updated by sp_run_simulation';

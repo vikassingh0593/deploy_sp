@@ -14,3 +14,9 @@ resources:
             file:
               path: ../sql/02_sp_clean_staging.sql
             warehouse_id: ${var.sql_warehouse_id}
+
+        - task_key: deploy_sp_run_simulation
+          sql_task:
+            file:
+              path: ../sql/03_sp_run_simulation.sql
+            warehouse_id: ${var.sql_warehouse_id}
