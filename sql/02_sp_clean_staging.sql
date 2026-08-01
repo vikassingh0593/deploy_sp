@@ -1,10 +1,8 @@
 CREATE OR REPLACE PROCEDURE dev_catalog.analytics.sp_clean_staging(IN days_to_keep INT)
 LANGUAGE SQL
-AS
-$$
-DECLARE
-  cutoff_date DATE;
 BEGIN
+  DECLARE cutoff_date DATE;
+
   -- If retention period is null, default to 30 days
   IF days_to_keep IS NULL OR days_to_keep < 0 THEN
     SET days_to_keep = 30;
@@ -16,4 +14,3 @@ BEGIN
   DELETE FROM dev_catalog.analytics.staging_table 
   WHERE arrival_timestamp < CAST(cutoff_date AS TIMESTAMP);
 END;
-$$;
