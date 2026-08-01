@@ -1,14 +1,16 @@
-name: Deploy SQL Procedures to PROD
+name: Deploy SQL Procedures
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
 
 jobs:
   deploy:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    environment: production
+    environment: dev
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -17,16 +19,16 @@ jobs:
         uses: databricks/setup-cli@main
 
       - name: Validate Databricks Asset Bundle
-        run: databricks bundle validate -t prod
+        run: databricks bundle validate -t dev
         env:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_SP_TOKEN }}
 
-      - name: Deploy Bundle to PROD Workspace
-        run: databricks bundle deploy -t prod
+      - name: Deploy Bundle to Workspace
+        run: databricks bundle deploy -t dev
         env:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_SP_TOKEN }}
 
       - name: Execute DDL Job to Apply Stored Procedures
-        run: databricks bundle run deploy_stored_procedures -t prod
+        run: databricks bundle run deploy_stored_procedures -t dev
         env:
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_SP_TOKEN }}

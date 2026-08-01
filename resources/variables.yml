@@ -13,8 +13,3 @@ targets:
       schema: analytics
       sql_warehouse_id: bd30e90188326d9e
 
-  prod:
-    variables:
-      catalog: prod_catalog
-      schema: analytics
-      sql_warehouse_id: bd30e90188326d9e
