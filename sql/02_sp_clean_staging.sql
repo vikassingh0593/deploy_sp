@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE ${catalog}.${schema}.sp_clean_staging(IN days_to_keep INT)
+CREATE OR REPLACE PROCEDURE dev_catalog.analytics.sp_clean_staging(IN days_to_keep INT)
 LANGUAGE SQL
 AS
 $$
@@ -13,7 +13,7 @@ BEGIN
   SET cutoff_date = DATE_SUB(CURRENT_DATE(), days_to_keep);
 
   -- Delete older records from staging
-  DELETE FROM ${catalog}.${schema}.staging_table 
+  DELETE FROM dev_catalog.analytics.staging_table 
   WHERE arrival_timestamp < CAST(cutoff_date AS TIMESTAMP);
 END;
 $$;
