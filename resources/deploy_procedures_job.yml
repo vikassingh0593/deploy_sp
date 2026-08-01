@@ -5,14 +5,14 @@ resources:
       tasks:
         - task_key: deploy_sp_calculate_metrics
           sql_task:
-            query:
-              file_path: ../sql/01_sp_calculate_metrics.sql
+            file:
+              path: ../sql/01_sp_calculate_metrics.sql
             warehouse_id: ${var.sql_warehouse_id}
 
         - task_key: deploy_sp_clean_staging
           sql_task:
-            query:
-              file_path: ../sql/02_sp_clean_staging.sql
+            file:
+              path: ../sql/02_sp_clean_staging.sql
             warehouse_id: ${var.sql_warehouse_id}
           depends_on:
             - task_key: deploy_sp_calculate_metrics
