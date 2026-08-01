@@ -1,5 +1,6 @@
 CREATE OR REPLACE PROCEDURE dev_catalog.analytics.sp_calculate_metrics(IN target_date DATE)
 LANGUAGE SQL
+SQL SECURITY DEFINER
 BEGIN
   INSERT INTO dev_catalog.analytics.daily_metrics
   SELECT 

@@ -1,5 +1,6 @@
 CREATE OR REPLACE PROCEDURE dev_catalog.analytics.sp_clean_staging(IN days_to_keep INT)
 LANGUAGE SQL
+SQL SECURITY DEFINER
 BEGIN
   DECLARE cutoff_date DATE;
 

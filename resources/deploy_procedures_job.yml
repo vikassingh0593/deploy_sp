@@ -3,16 +3,27 @@ resources:
     deploy_stored_procedures:
       name: "[${bundle.target}] Deploy SQL Stored Procedures"
       tasks:
+        # Step 0: Create catalog, schema, and all dependent tables
+        - task_key: setup_environment
+          sql_task:
+            file:
+              path: ../sql/00_setup_env.sql
+            warehouse_id: ${var.sql_warehouse_id}
+
+        # Step 1: Create/update the calculate_metrics stored procedure
         - task_key: deploy_sp_calculate_metrics
           sql_task:
             file:
               path: ../sql/01_sp_calculate_metrics.sql
             warehouse_id: ${var.sql_warehouse_id}
+          depends_on:
+            - task_key: setup_environment
 
+        # Step 2: Create/update the clean_staging stored procedure
         - task_key: deploy_sp_clean_staging
           sql_task:
             file:
               path: ../sql/02_sp_clean_staging.sql
             warehouse_id: ${var.sql_warehouse_id}
           depends_on:
-            - task_key: deploy_sp_calculate_metrics
+            - task_key: setup_environment
