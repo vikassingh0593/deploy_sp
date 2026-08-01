@@ -9,7 +9,6 @@ include:
 targets:
   # The 'dev' target, for development purposes. This target is the default.
   dev:
-    mode: development
     default: true
     workspace:
       host: https://dbc-2e4d9781-997b.cloud.databricks.com
