@@ -1,12 +1,14 @@
 name: Deploy SQL Procedures to PROD
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
 
 jobs:
   deploy:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: production
     steps:
