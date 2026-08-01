@@ -1,0 +1,20 @@
+variables:
+  catalog:
+    description: "Target catalog"
+  schema:
+    description: "Target schema"
+  sql_warehouse_id:
+    description: "Warehouse ID for executing SQL tasks"
+
+targets:
+  dev:
+    variables:
+      catalog: dev_catalog
+      schema: analytics
+      sql_warehouse_id: bd30e90188326d9e
+
+  prod:
+    variables:
+      catalog: prod_catalog
+      schema: analytics
+      sql_warehouse_id: bd30e90188326d9e

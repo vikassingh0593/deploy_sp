@@ -1,0 +1,32 @@
+name: Deploy SQL Procedures to PROD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate Databricks Asset Bundle
+        run: databricks bundle validate -t prod
+        env:
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_SP_TOKEN }}
+
+      - name: Deploy Bundle to PROD Workspace
+        run: databricks bundle deploy -t prod
+        env:
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_SP_TOKEN }}
+
+      - name: Execute DDL Job to Apply Stored Procedures
+        run: databricks bundle run deploy_stored_procedures -t prod
+        env:
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PROD_SP_TOKEN }}
