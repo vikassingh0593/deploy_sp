@@ -1,0 +1,8 @@
+resources:
+  jobs:
+    setup_environment:
+      name: "[${bundle.target}] Setup Environment"
+      tasks:
+        - task_key: run_setup_env
+          notebook_task:
+            notebook_path: ../code/00_setup_env.py
