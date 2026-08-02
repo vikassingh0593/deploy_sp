@@ -15,10 +15,11 @@ deploy_sp/
 │   └── 00_setup_env.py                 # Notebook: creates catalog, schema & tables (serverless)
 ├── sql/
 │   ├── 01_sp_calculate_metrics.sql     # Stored Procedure: aggregate daily metrics
-│   └── 02_sp_clean_staging.sql         # Stored Procedure: clean old staging data
+│   ├── 02_sp_clean_staging.sql         # Stored Procedure: clean old staging data
+│   └── 03_sp_run_simulation.sql        # Stored Procedure: JSON-driven demand/supply simulation
 ├── resources/
 │   ├── variables.yml                   # Bundle variables (catalog, schema, warehouse ID)
-│   ├── setup_env_job.yml               # Job definition: runs the setup notebook
+│   ├── setup_env_job.yml               # Job definition: runs the setup notebook (serverless)
 │   └── deploy_procedures_job.yml       # Job definition: deploys stored procedures via SQL warehouse
 ├── databricks.yml                      # Root DABs configuration
 └── README.md
@@ -41,29 +42,96 @@ Centralised variable definitions used across all jobs:
 | `schema` | Schema name (default: `analytics`) |
 | `sql_warehouse_id` | Databricks SQL Warehouse ID for executing SQL tasks |
 
-### `code/00_setup_env.py`
-A Databricks notebook (runs on **serverless compute**) that provisions the environment:
-- Creates `dev_catalog` catalog
-- Creates `dev_catalog.analytics` schema
-- Creates the following tables:
+---
 
-| Table | Purpose |
-|---|---|
-| `orders` | Source table with `customer_id`, `amount`, `order_date` |
-| `daily_metrics` | Target table populated by `sp_calculate_metrics` |
-| `staging_table` | Staging table cleaned by `sp_clean_staging` |
+## Tables
 
-### `sql/01_sp_calculate_metrics.sql`
-Stored procedure that aggregates daily customer spending from the `orders` table and inserts results into `daily_metrics`.
+All tables are provisioned by the `code/00_setup_env.py` notebook.
 
-### `sql/02_sp_clean_staging.sql`
-Stored procedure that deletes records older than a configurable retention period (default: 30 days) from `staging_table`.
+| Table | Columns | Purpose |
+|---|---|---|
+| `orders` | `customer_id`, `amount`, `order_date` | Source table for order data |
+| `daily_metrics` | `customer_id`, `total_spend` | Target table populated by `sp_calculate_metrics` |
+| `staging_table` | `arrival_timestamp` | Staging table cleaned by `sp_clean_staging` |
+| `product_planning` | `product_id`, `region`, `demand`, `supply`, `price`, `simulation_flag`, `last_updated` | Base table for demand/supply simulation |
 
-### `resources/setup_env_job.yml`
-Databricks Job definition that runs the `00_setup_env.py` notebook on serverless compute to create all required infrastructure.
+---
 
-### `resources/deploy_procedures_job.yml`
-Databricks Job definition with two SQL tasks that execute the stored procedure DDL files against a SQL Warehouse to create/update the procedures in Unity Catalog.
+## Stored Procedures
+
+### `sp_calculate_metrics` — `sql/01_sp_calculate_metrics.sql`
+Aggregates daily customer spending from the `orders` table and inserts results into `daily_metrics`.
+
+```sql
+CALL dev_catalog.analytics.sp_calculate_metrics('2026-08-01');
+```
+
+### `sp_clean_staging` — `sql/02_sp_clean_staging.sql`
+Deletes records older than a configurable retention period (default: 30 days) from `staging_table`.
+
+```sql
+CALL dev_catalog.analytics.sp_clean_staging(30);
+```
+
+### `sp_run_simulation` — `sql/03_sp_run_simulation.sql`
+Accepts a JSON payload and returns a simulated result set from the `product_planning` table. **Read-only** — does not modify any data.
+
+**Payload format:**
+```json
+{
+  "filters":    { "region": "APAC", "product_id": "P100" },
+  "demand":     { "product_id": "P100", "demand": 500 },
+  "supply":     { "product_id": "P100", "supply": 300 },
+  "simulation": { "product_id": "P100", "price_change": 10 }
+}
+```
+
+**Conditional logic:**
+| Section | JSON Key | Skip Condition | Behaviour |
+|---|---|---|---|
+| Filters | `filters.region`, `filters.product_id` | Absent → no filter applied | Narrows scope of returned rows |
+| Demand | `demand.product_id`, `demand.demand` | Absent or `demand = -1` | Returns overridden demand value, or original |
+| Supply | `supply.product_id`, `supply.supply` | Absent or `supply = -1` | Returns overridden supply value, or original |
+| Simulation | `simulation.product_id`, `simulation.price_change` | Absent or `price_change = -1` | Returns adjusted price, or original |
+
+**Example calls:**
+
+Full simulation:
+```sql
+CALL dev_catalog.analytics.sp_run_simulation('{
+  "filters":    { "region": "APAC", "product_id": "P100" },
+  "demand":     { "product_id": "P100", "demand": 500 },
+  "supply":     { "product_id": "P100", "supply": 300 },
+  "simulation": { "product_id": "P100", "price_change": 10 }
+}');
+```
+
+Only adjust supply (demand and price unchanged):
+```sql
+CALL dev_catalog.analytics.sp_run_simulation('{
+  "filters": { "region": "APAC" },
+  "supply":  { "product_id": "P100", "supply": 300 }
+}');
+```
+
+Return filtered data with no changes:
+```sql
+CALL dev_catalog.analytics.sp_run_simulation('{
+  "filters": { "region": "EMEA" }
+}');
+```
+
+**Output columns:** `product_id`, `region`, `demand`, `supply`, `price`, `simulation_flag`, `simulated_at`
+
+---
+
+## Databricks Jobs
+
+### `setup_environment` — `resources/setup_env_job.yml`
+Runs the `code/00_setup_env.py` notebook on **serverless compute** to create the catalog, schema, and all dependent tables.
+
+### `deploy_stored_procedures` — `resources/deploy_procedures_job.yml`
+Executes the SQL DDL files against a SQL Warehouse to create/update all three stored procedures in Unity Catalog. All tasks run in parallel.
 
 ---
 
